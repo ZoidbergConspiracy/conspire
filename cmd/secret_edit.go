@@ -24,12 +24,85 @@ Creates a new secret if one doesn't already exist.`,
 	Run: editSecret,
 }
 
+var recryptSecretCmd = &cobra.Command{
+	Use:   "recrypt <secret>",
+	Short: "recrypt the value of the secret",
+	Long: `Recrypt the contents of the secret stored in the vault.
+This is useful to update a secret after you change group members.`,
+	Run: recryptSecret,
+}
+
 var group string
 
 func init() {
 	secretCmd.AddCommand(editSecretCmd)
+	secretCmd.AddCommand(recryptSecretCmd)
 	editSecretCmd.Flags().StringVarP(&group, "group", "g", "default", "group to whom the secret will be encrypted")
 	editSecretCmd.Flags().StringVarP(&Editor, "editor", "e", os.Getenv("EDITOR"), "editor to use")
+}
+
+func recryptSecret(cmd *cobra.Command, args []string) {
+
+	if Verbose {
+		fmt.Printf("\nConfiguration:\n")
+		fmt.Println("  Using secret keyring:  " + SecRingPath)
+		fmt.Println("  Using public keyring:  " + PubRingPath)
+		fmt.Println("  Using vault directory: " + VaultDir)
+	}
+	if len(args) < 1 {
+		fmt.Printf("You must specify a secret to recrypt\n")
+		os.Exit(0)
+	}
+
+	name := args[0]
+	spath := filepath.Join(VaultDir, name)
+	file, err := os.OpenFile(spath, os.O_RDWR, 0660)
+	if err != nil {
+		fmt.Printf("Couldn't open secret file %v\n%v\n", spath, err)
+		os.Exit(-1)
+	}
+
+	secret := getSecret(name)
+
+	// Create a temporary file and copy the secret in
+	base := ".tmp." + path.Base(spath)
+	tmpfile, err := ioutil.TempFile(VaultDir, base)
+	if err != nil {
+		fmt.Printf("Couldn't create secure temporary file in %v\n%v\n", VaultDir, err)
+		os.Exit(-1)
+	}
+	tmpname := tmpfile.Name()
+
+	if _, err := io.Copy(tmpfile, secret); err != nil {
+		fmt.Printf("Couldn't write secret data into temp file %v\n%v\n", tmpname, err)
+		os.Exit(-1)
+	}
+	tmpfile.Close()
+
+	// Encrypt the temporary file and overwrite the previous secret
+	tmpfile, err = os.Open(tmpname)
+	if err != nil {
+		fmt.Printf("Couldn't read back contents of edited buffer %v\n%v\n", tmpname, err)
+		os.Exit(-1)
+	}
+	raw := new(bytes.Buffer)
+	if _, err := raw.ReadFrom(tmpfile); err != nil {
+		fmt.Printf("Couldn't read data from %v into buffer\n%v\n", tmpname, err)
+		os.Exit(-1)
+	}
+	encrypted := encrypt(raw, group)
+	if _, err := io.Copy(file, encrypted); err != nil {
+		fmt.Printf("Couldn't write encrypted data into file %v\n%v\n", tmpname, err)
+		os.Exit(-1)
+	}
+
+	// clean up
+	file.Close()
+	tmpfile.Close()
+	if os.Remove(tmpname) != nil {
+		fmt.Printf("Couldn't remove unencrypted temp file %v\nYou should remove it manually.%v\n", tmpname, err)
+	}
+
 }
 
 func editSecret(cmd *cobra.Command, args []string) {
