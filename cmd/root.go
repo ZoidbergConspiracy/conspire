@@ -40,6 +40,7 @@ support for managing groups of users as distinct keychains.`,
 var SecRingPath = ""
 var PubRingPath = ""
 var VaultDir = ""
+var Editor = ""
 var Terse = false
 var Verbose = false
 
@@ -58,6 +59,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().BoolVarP(&Terse, "terse", "t", false, "terse (machine-parseable) output")
 	RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+	RootCmd.PersistentFlags().StringVarP(&VaultDir, "directory", "d", os.Getenv("CONSPIRACY_VAULT"), "vault directory")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -70,9 +72,12 @@ func initConfig() {
 	SecRingPath = filepath.Join(gpghome, "secring.gpg")
 	PubRingPath = filepath.Join(gpghome, "pubring.gpg")
 
-	VaultDir = os.Getenv("CONSPIRACY_VAULT")
 	if VaultDir == "" {
 		VaultDir, _ = os.Getwd()
+	}
+
+	if Editor == "" {
+		Editor = "/bin/vi"
 	}
 
 }
