@@ -37,6 +37,7 @@ var group string
 func init() {
 	secretCmd.AddCommand(editSecretCmd)
 	secretCmd.AddCommand(recryptSecretCmd)
+	recryptSecretCmd.Flags().StringVarP(&group, "group", "g", "default", "group to whom the secret will be encrypted")
 	editSecretCmd.Flags().StringVarP(&group, "group", "g", "default", "group to whom the secret will be encrypted")
 	editSecretCmd.Flags().StringVarP(&Editor, "editor", "e", os.Getenv("EDITOR"), "editor to use")
 }
