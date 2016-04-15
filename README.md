@@ -7,18 +7,61 @@ It uses PGP/GPG keyrings to encrypts sets of secrets in a special
 directory, called a vault. Each keyring is a group of users who are set up
 as shared recepients for a secret file, which is stored in the vault.
 
+Sharing secrets among groups of people with GPG is a little awkward, because
+there is no facility to manage groups. This tool aims to make it simpler
+to manage secrets among groups.
+
 ## Requirements
 
 * You must have a PGP or GnuPG secret key and public key.
 * Ideally you should have one or more friend's public key, so you can
   conspire with them.
+* An editor, specified with the EDITOR environment variable.
+* - Right now it is known to work on Linux and Mac. Not tested on Windows.
+
+## Design and Security
+
+The tool is written in pure Go, and this helps minimize some comon stupid
+programming errors that can lead to security issues, but the tool still needs
+a rigorous security review.
+
+It does rely heavily on the existence of GPG managed keychains, and it will also
+try to use the GPGAgent to retrieve passphrases on keys, where available. Again,
+this needs some work to get it more secure.
+
+Finally, it also does call out to an external editor, and this process involves
+creating temporary files in the vault directory to allow standard editors to
+operate on unencrypted secrets. There are still problems handing off to some
+editors, and those temporary files may hang around (but the tool will try to
+tell you if this happens), but you should make sure you trust your editor, your
+console, and your vault directory.
 
 ## Getting Started
 
-The first step is to get a secret and private key set up. The full scope of
-selecting and using PGP or GnuPG is beyond the scope of this tool but you
-can find plenty of information on how to get the software and use it at
-(http://www.gnupg.org)[the GnuPG website].
+1. The first step is to get a secret and private key set up. The full scope of
+  selecting and using PGP or GnuPG is beyond the scope of this tool but you
+  can find plenty of information on how to get the software and use it at
+  [http://www.gnupg.org]([the GnuPG website).
+
+2. Next, you need to get and trust some keys of some co-conspirators. You should
+  Get their public keys and add them to your GPG keychain and trust them. The
+  conspire tool uses long KeyIDs from GPG to uniquely identify your trusted
+  co-conspirators, so you should consider adding ```keyid-format LONG``` to your
+  ```gpg.conf``` file.
+
+3. Install the conspire tool, which should be as simple as ...
+   ```
+go get -u github.com/ZodbergConspiracy/conspire
+  ```
+4. Identify where you want to manage your first vault. You can have multiple vaults.
+  Vaults are just directories with group and secret files. You can identify your
+  vault directory with the ```CONSPIRACY_VAULT``` environment variable, or using
+  the ```--directory``` command flag.
+
+5. Add a default group to your local vault.
+
+6. Pick an editor, and set the path to your editor via the ```EDITOR``` environment
+  variable.
 
 ### I'm Too Lazy, Show Me Anyway
 
