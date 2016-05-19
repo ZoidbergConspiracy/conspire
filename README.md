@@ -17,7 +17,7 @@ to manage secrets among groups.
 * Ideally you should have one or more friend's public key, so you can
   conspire with them.
 * An editor, specified with the EDITOR environment variable.
-* - Right now it is known to work on Linux and Mac. Not tested on Windows.
+* Right now it is known to work on Linux and Mac. It works on Windows with some trouble (mostly because of where GPG stores files is less clear).
 
 ## Design and Security
 
@@ -56,9 +56,22 @@ go get -u github.com/ZodbergConspiracy/conspire
 4. Identify where you want to manage your first vault. You can have multiple vaults.
   Vaults are just directories with group and secret files. You can identify your
   vault directory with the ```CONSPIRACY_VAULT``` environment variable, or using
-  the ```--directory``` command flag.
+  the ```--directory``` command flag. If you don't do either, it will use the current
+  directory as the vault directory.
 
-5. Add a default group to your local vault.
+5. Add a default group to your local vault. You do this by identifying and adding the longid
+  of users to a new default group.
+
+```
+$ gpg --list-keys thornton.prime@gmail.com
+pub   2048R/4ABE7D9A80CC940B 2014-01-17
+uid                          Thornton Prime <thornton.prime@gmail.com>
+uid                          [jpeg image of size 8469]
+uid                          [jpeg image of size 6326]
+uid                          [jpeg image of size 16180]
+sub   2048R/5596330FC4D20DEA 2014-01-17
+$ conspire group add default 4ABE7D9A80CC940B
+```
 
 6. Pick an editor, and set the path to your editor via the ```EDITOR``` environment
   variable.
