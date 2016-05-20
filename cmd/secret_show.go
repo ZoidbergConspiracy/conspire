@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
@@ -22,49 +24,78 @@ var showSecretCmd = &cobra.Command{
 }
 
 func Prompt() func(keys []openpgp.Key, symmetric bool) (pass []byte, err error) {
-
 	pass_tries := 3
+
 	if os.Getenv("GPG_AGENT_INFO") != "" {
 		// Use the GPG Agent to get the passphrase
-		pr := &PassphraseRequest{"key", "", "Passphrase", "For descr file", false}
 		return func(keys []openpgp.Key, symmetric bool) (pass []byte, err error) {
-			c, err := NewGpgAgentConn()
-			if err != nil {
+
+			c, err1 := NewGpgAgentConn()
+			if err1 != nil {
 				fmt.Printf("Couldn't open GpgAgent even though GPG_AGENT_INFO is set\n%v\n", err)
 				os.Exit(-1)
 			}
 
-			spass, err := c.GetPassphrase(pr)
-
-			pass = []byte(spass)
 			for _, key := range keys {
-				err := key.PrivateKey.Decrypt(pass)
+
+				names := make([]string, len(key.Entity.Identities))
+				i := 0
+				for l, _ := range key.Entity.Identities {
+					names[i] = l
+					i++
+				}
+
+				keyid := fmt.Sprintf("%016X", key.PublicKey.KeyId)
+				pr := &PassphraseRequest{
+					keyid,
+					"",
+					"Passphrase:",
+					fmt.Sprintf("You need a passphrase to unlock the secret key for \"%s\" (%s)", strings.Join(names, " "), keyid),
+					false,
+				}
+
+				spass, _ := c.GetPassphrase(pr)
+				pass = []byte(spass)
+				err = key.PrivateKey.Decrypt(pass)
 				if err != nil {
-					c.RemoveFromCache("key")
+					c.RemoveFromCache(keyid)
 					pass_tries--
 					if pass_tries < 1 {
 						fmt.Printf("No valid passphrase after 3 tries. Quitting.\n")
 						os.Exit(-1)
 					}
 					pr.Error = "Wrong passphrase. Please try again."
+				} else {
+					err = nil
+					return
 				}
 			}
-			err = nil
+			err = errors.New("No matching key")
 			return
 		}
 
 	} else {
+
 		// Just use a simple passphrase grabber
 		return func(keys []openpgp.Key, symmetric bool) (pass []byte, err error) {
-			fmt.Printf("Enter passphrase: ")
-			pass, err = gopass.GetPasswd()
-			if err != nil {
-				fmt.Printf("Error reading passphrase.\n%v\n", err)
-				os.Exit(-1)
-			}
 
 			for _, key := range keys {
-				err := key.PrivateKey.Decrypt(pass)
+				names := make([]string, len(key.Entity.Identities))
+				i := 0
+				for l, _ := range key.Entity.Identities {
+					names[i] = l
+					i++
+				}
+
+				keyid := fmt.Sprintf("%016X", key.PublicKey.KeyId)
+
+				fmt.Printf("Enter passphrase for \"%s\" (%s): ", strings.Join(names, " "), keyid)
+				pass, err = gopass.GetPasswd()
+				if err != nil {
+					fmt.Printf("Error reading passphrase.\n%v\n", err)
+					os.Exit(-1)
+				}
+				err = key.PrivateKey.Decrypt(pass)
 				if err != nil {
 					pass_tries--
 					if pass_tries < 1 {
@@ -72,10 +103,13 @@ func Prompt() func(keys []openpgp.Key, symmetric bool) (pass []byte, err error) 
 						os.Exit(-1)
 					}
 					fmt.Println("Wrong passphrase. Please try again.")
+				} else {
+					err = nil
+					return
 				}
 			}
 
-			err = nil
+			err = errors.New("No matching key")
 			return
 		}
 	}
