@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/ZoidbergConspiracy/conspire/cmd"
+import "github.com/zoidbergconspiracy/conspire/cmd"
 
 func main() {
 	cmd.Execute()
