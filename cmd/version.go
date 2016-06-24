@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var versionInfo = "conspire version 0.1.0 (c) 2016 Thornton Prime"
+var versionInfo = "conspire version 0.9.5 (c) 2016 Thornton Prime"
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
