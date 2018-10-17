@@ -50,8 +50,7 @@ console, and your vault directory.
   ```gpg.conf``` file.
 
 3. Install the conspire tool, which should be as simple as ...
-   ```
-go get -u github.com/ZodbergConspiracy/conspire
+   ```go get -u github.com/ZodbergConspiracy/conspire
   ```
 4. Identify where you want to manage your first vault. You can have multiple vaults.
   Vaults are just directories with group and secret files. You can identify your
