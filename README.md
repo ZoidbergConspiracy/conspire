@@ -49,9 +49,11 @@ console, and your vault directory.
   co-conspirators, so you should consider adding ```keyid-format LONG``` to your
   ```gpg.conf``` file.
 
-3. Install the conspire tool, which should be as simple as ...
-   ```go get -u github.com/ZodbergConspiracy/conspire
-  ```
+3. Install the conspire tool, which should be as simple as
+   ```
+   go get -u github.com/ZodbergConspiracy/conspire
+   ```
+   
 4. Identify where you want to manage your first vault. You can have multiple vaults.
   Vaults are just directories with group and secret files. You can identify your
   vault directory with the ```CONSPIRACY_VAULT``` environment variable, or using
@@ -60,8 +62,7 @@ console, and your vault directory.
 
 5. Add a default group to your local vault. You do this by identifying and adding the longid
   of users to a new default group.
-
-```
+  ```
 $ gpg --list-keys thornton.prime@gmail.com
 pub   2048R/4ABE7D9A80CC940B 2014-01-17
 uid                          Thornton Prime <thornton.prime@gmail.com>
